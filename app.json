@@ -1,0 +1,78 @@
+{
+  "expo": {
+    "name": "NCH GPS Tracker",
+    "slug": "nch-gps-tracker",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#333788"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.nch.gpstracker",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "NCH GPS Tracker needs your location at all times to accurately track your field trips and calculate distance travelled.",
+        "NSLocationWhenInUseUsageDescription": "NCH GPS Tracker needs your location to track your trip distance.",
+        "NSLocationAlwaysUsageDescription": "NCH GPS Tracker needs your location at all times to accurately track your field trips and calculate distance travelled.",
+        "UIBackgroundModes": [
+          "location",
+          "fetch"
+        ]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#333788"
+      },
+      "package": "com.nch.gpstracker",
+      "versionCode": 1,
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
+        "RECEIVE_BOOT_COMPLETED",
+        "POST_NOTIFICATIONS"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "NCH GPS Tracker needs your location at all times to accurately track your field trips and calculate distance travelled.",
+          "locationAlwaysPermission": "NCH GPS Tracker needs your location at all times to accurately track your field trips and calculate distance travelled.",
+          "locationWhenInUsePermission": "NCH GPS Tracker needs your location to track your trip distance.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ],
+      "expo-task-manager",
+      [
+        "expo-notifications",
+        {
+          "color": "#333788",
+          "defaultChannel": "nch-gps-channel"
+        }
+      ],
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "nch-gps-tracker"
+      }
+    }
+  }
+}
