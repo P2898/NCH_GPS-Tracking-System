@@ -27,7 +27,7 @@ import {
   saveBgTracking,
   getBgTracking,
 } from '../utils/storage';
-import { stopBackgroundTracking } from '../utils/backgroundTask';
+
 import { RATE_PER_KM } from '../utils/formatters';
 import { COLORS, FONTS, FONT_SIZES, SPACING, RADIUS, SHADOWS } from '../constants/theme';
 import { useTheme } from '../context/ThemeContext';
@@ -55,17 +55,11 @@ export default function ProfileScreen({ user, onLogout }) {
   async function handleGpsToggle(val) {
     setGpsEnabled(val);
     await saveGpsEnabled(val);
-    if (!val) {
-      try { await stopBackgroundTracking(); } catch (e) { /* web fallback */ }
-    }
   }
 
   async function handleBgTrackingToggle(val) {
     setBgTrackingState(val);
     await saveBgTracking(val);
-    if (!val) {
-      try { await stopBackgroundTracking(); } catch (e) { /* web fallback */ }
-    }
   }
 
   function confirmClearData() {
@@ -82,7 +76,7 @@ export default function ProfileScreen({ user, onLogout }) {
       await deleteAllTrips();
       await clearActiveTrip();
       await clearBgDistance();
-      try { await stopBackgroundTracking(); } catch (e) { /* web fallback */ }
+
       showAlert('✅ Done', 'All trip data has been cleared.');
     } catch (e) {
       showAlert('Error', 'Could not clear data. Please try again.');
@@ -101,7 +95,7 @@ export default function ProfileScreen({ user, onLogout }) {
 
   async function handleLogout() {
     try {
-      try { await stopBackgroundTracking(); } catch (e) { /* web fallback */ }
+
       await clearUserSession();
       onLogout();
     } catch (e) {
@@ -144,6 +138,10 @@ export default function ProfileScreen({ user, onLogout }) {
           <View style={styles.profileInfo}>
             <Text style={styles.profileName}>{user?.name || 'Field Executive'}</Text>
             <Text style={styles.profileId}>ID: {user?.employeeId || '—'}</Text>
+            <View style={styles.bikeInfo}>
+              <Ionicons name="bicycle" size={12} color="rgba(255,255,255,0.75)" />
+              <Text style={styles.profileBike}>{user?.bikeNumber || '—'}</Text>
+            </View>
             <View style={styles.designationBadge}>
               <Ionicons name="briefcase-outline" size={11} color={COLORS.primary} />
               <Text style={styles.designationText}>{user?.designation || 'Field Executive'}</Text>
@@ -161,17 +159,15 @@ export default function ProfileScreen({ user, onLogout }) {
                 <Ionicons name="location-outline" size={20} color={COLORS.primary} />
               </View>
               <View>
-                <Text style={styles.settingTitle}>GPS Tracking</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={styles.settingTitle}>GPS Tracking</Text>
+                  <View style={styles.mandatoryBadge}>
+                    <Text style={styles.mandatoryText}>MANDATORY</Text>
+                  </View>
+                </View>
                 <Text style={styles.settingSubtitle}>Enable location tracking</Text>
               </View>
             </View>
-            <Switch
-              value={gpsEnabled}
-              onValueChange={handleGpsToggle}
-              trackColor={{ false: COLORS.border, true: COLORS.primaryLight }}
-              thumbColor={gpsEnabled ? COLORS.primary : COLORS.textSecondary}
-              ios_backgroundColor={COLORS.border}
-            />
           </View>
 
           <View style={styles.divider} />
@@ -182,17 +178,15 @@ export default function ProfileScreen({ user, onLogout }) {
                 <Ionicons name="phone-portrait-outline" size={20} color="#1565C0" />
               </View>
               <View>
-                <Text style={styles.settingTitle}>Background Tracking</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={styles.settingTitle}>Background Tracking</Text>
+                  <View style={styles.mandatoryBadge}>
+                    <Text style={styles.mandatoryText}>MANDATORY</Text>
+                  </View>
+                </View>
                 <Text style={styles.settingSubtitle}>Track when app is closed</Text>
               </View>
             </View>
-            <Switch
-              value={bgTracking}
-              onValueChange={handleBgTrackingToggle}
-              trackColor={{ false: COLORS.border, true: COLORS.primaryLight }}
-              thumbColor={bgTracking ? COLORS.primary : COLORS.textSecondary}
-              ios_backgroundColor={COLORS.border}
-            />
           </View>
         </View>
 
@@ -336,6 +330,17 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.75)',
     marginTop: 2,
   },
+  bikeInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  profileBike: {
+    fontFamily: FONTS.semiBold,
+    fontSize: FONT_SIZES.sm,
+    color: 'rgba(255,255,255,0.75)',
+  },
   designationBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -378,7 +383,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.md,
-    flex: 1,
   },
   iconWrap: {
     width: 40,
@@ -495,5 +499,16 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     textAlign: 'center',
     marginBottom: SPACING.sm,
+  },
+  mandatoryBadge: {
+    backgroundColor: '#E8F5E9',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  mandatoryText: {
+    fontFamily: FONTS.bold,
+    fontSize: 9,
+    color: '#2E7D32',
   },
 });

@@ -22,9 +22,11 @@ import { COLORS, FONTS, FONT_SIZES, SPACING, RADIUS, SHADOWS } from '../constant
 export default function LoginScreen({ onLogin }) {
   const [name, setName] = useState('');
   const [employeeId, setEmployeeId] = useState('');
+  const [bikeNumber, setBikeNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const [nameFocused, setNameFocused] = useState(false);
   const [idFocused, setIdFocused] = useState(false);
+  const [bikeFocused, setBikeFocused] = useState(false);
   const [errors, setErrors] = useState({});
 
   function validate() {
@@ -33,6 +35,7 @@ export default function LoginScreen({ onLogin }) {
     if (!employeeId.trim()) errs.employeeId = 'Employee ID is required';
     else if (!/^[A-Za-z0-9\-_]+$/.test(employeeId.trim()))
       errs.employeeId = 'Invalid employee ID format';
+    if (!bikeNumber.trim()) errs.bikeNumber = 'Bike number is required';
     setErrors(errs);
     return Object.keys(errs).length === 0;
   }
@@ -44,6 +47,7 @@ export default function LoginScreen({ onLogin }) {
       const user = {
         name: name.trim(),
         employeeId: employeeId.trim().toUpperCase(),
+        bikeNumber: bikeNumber.trim().toUpperCase(),
         designation: 'Field Executive',
         loginTime: new Date().toISOString(),
       };
@@ -154,11 +158,43 @@ export default function LoginScreen({ onLogin }) {
                   onBlur={() => setIdFocused(false)}
                   autoCapitalize="characters"
                   autoCorrect={false}
+                  returnKeyType="next"
+                />
+              </View>
+              {errors.employeeId ? <Text style={styles.errorText}>{errors.employeeId}</Text> : null}
+            </View>
+
+            {/* Bike Number Input */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Bike Number</Text>
+              <View
+                style={[
+                  styles.inputWrap,
+                  bikeFocused && styles.inputWrapFocused,
+                  errors.bikeNumber && styles.inputWrapError,
+                ]}
+              >
+                <Ionicons
+                  name="bicycle-outline"
+                  size={18}
+                  color={bikeFocused ? COLORS.primary : COLORS.textSecondary}
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. KA-01-EF-1234"
+                  placeholderTextColor={COLORS.placeholder}
+                  value={bikeNumber}
+                  onChangeText={(v) => { setBikeNumber(v); setErrors((e) => ({ ...e, bikeNumber: null })); }}
+                  onFocus={() => setBikeFocused(true)}
+                  onBlur={() => setBikeFocused(false)}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
                   returnKeyType="done"
                   onSubmitEditing={handleLogin}
                 />
               </View>
-              {errors.employeeId ? <Text style={styles.errorText}>{errors.employeeId}</Text> : null}
+              {errors.bikeNumber ? <Text style={styles.errorText}>{errors.bikeNumber}</Text> : null}
             </View>
 
             {/* Login Button */}

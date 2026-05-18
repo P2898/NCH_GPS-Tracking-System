@@ -20,9 +20,7 @@ export default function TripCard({ trip }) {
   const km = formatKM(trip.distanceKM);
   const earnings = formatEarnings(trip.earnings);
   const duration = formatMinutes(trip.durationMinutes);
-  const customersStr = Array.isArray(trip.customers)
-    ? trip.customers.join(', ')
-    : trip.customers || '—';
+
 
   return (
     <TouchableOpacity
@@ -81,10 +79,6 @@ export default function TripCard({ trip }) {
       {/* Expanded Details */}
       {expanded && (
         <View style={styles.expandedSection}>
-          <View style={styles.divider} />
-          <Text style={styles.sectionLabel}>Customers Visited</Text>
-          <Text style={styles.customersText}>{customersStr}</Text>
-
           {trip.coordinates && trip.coordinates.length > 0 && (
             <>
               <Text style={styles.sectionLabel}>Coordinate Points Recorded</Text>

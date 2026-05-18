@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, FONT_SIZES, SPACING, RADIUS } from '../constants/theme';
 import { formatKM, formatEarnings, formatDuration } from '../utils/formatters';
 
-export default function LiveTripBanner({ distanceKM = 0, earnings = 0, elapsedSeconds = 0, customers = [] }) {
+export default function LiveTripBanner({ distanceKM = 0, earnings = 0, elapsedSeconds = 0 }) {
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -26,8 +26,6 @@ export default function LiveTripBanner({ distanceKM = 0, earnings = 0, elapsedSe
     pulse.start();
     return () => pulse.stop();
   }, []);
-
-  const customerCount = Array.isArray(customers) ? customers.length : 0;
 
   return (
     <View style={styles.banner}>
@@ -52,22 +50,7 @@ export default function LiveTripBanner({ distanceKM = 0, earnings = 0, elapsedSe
           <Text style={styles.statValue}>{formatEarnings(earnings)}</Text>
           <Text style={styles.statLabel}>Earnings</Text>
         </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{customerCount}</Text>
-          <Text style={styles.statLabel}>Customers</Text>
-        </View>
       </View>
-
-      {/* Customer names preview */}
-      {customerCount > 0 && (
-        <View style={styles.customersRow}>
-          <Ionicons name="people-outline" size={12} color={COLORS.summaryCardSubLabel} />
-          <Text style={styles.customersText} numberOfLines={1}>
-            {Array.isArray(customers) ? customers.join(', ') : customers}
-          </Text>
-        </View>
-      )}
     </View>
   );
 }

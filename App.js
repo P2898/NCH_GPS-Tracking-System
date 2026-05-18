@@ -1,7 +1,7 @@
 // App.js — NCH GPS Tracker
 // Navigation root, font loading, session restoration, background task registration
 
-import './utils/backgroundTask'; // MUST be imported at top level to register TaskManager task
+
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
@@ -23,7 +23,6 @@ import {
 
 import LoginScreen from './screens/LoginScreen';
 import DashboardScreen from './screens/DashboardScreen';
-import NewTripScreen from './screens/NewTripScreen';
 import HistoryScreen from './screens/HistoryScreen';
 import SummaryScreen from './screens/SummaryScreen';
 import ProfileScreen from './screens/ProfileScreen';
@@ -111,7 +110,6 @@ function MainTabs({ user, onLogout, navigation }) {
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
           if (route.name === 'Dashboard') iconName = focused ? 'home' : 'home-outline';
-          else if (route.name === 'NewTrip') iconName = focused ? 'car' : 'car-outline';
           else if (route.name === 'History') iconName = focused ? 'document-text' : 'document-text-outline';
           else if (route.name === 'Summary') iconName = focused ? 'bar-chart' : 'bar-chart-outline';
           else if (route.name === 'Profile') iconName = focused ? 'person' : 'person-outline';
@@ -131,11 +129,7 @@ function MainTabs({ user, onLogout, navigation }) {
         )}
       </Tab.Screen>
 
-      <Tab.Screen name="NewTrip" options={{ tabBarLabel: 'New Trip' }}>
-        {(props) => (
-          <NewTripScreen {...props} user={user} />
-        )}
-      </Tab.Screen>
+
 
       <Tab.Screen name="History" options={{ tabBarLabel: 'History' }}>
         {() => <HistoryScreen />}

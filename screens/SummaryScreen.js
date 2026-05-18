@@ -87,16 +87,7 @@ export default function SummaryScreen({ user }) {
     datasets: [{ data: dailyKM.map((v) => Math.round(v * 100) / 100) }],
   };
 
-  // ─── Customer visit counts ─────────────────────────────────────────────────
-  const customerMap = {};
-  monthTrips.forEach((t) => {
-    (t.customers || []).forEach((name) => {
-      customerMap[name] = (customerMap[name] || 0) + 1;
-    });
-  });
-  const customerList = Object.entries(customerMap)
-    .sort((a, b) => b[1] - a[1])
-    .map(([name, count]) => ({ name, count }));
+
 
   // ─── Export PDF ─────────────────────────────────────────────────────────────
   async function handleExport() {
@@ -114,12 +105,12 @@ export default function SummaryScreen({ user }) {
         year: selectedYear,
         employeeName: user?.name || 'Field Executive',
         employeeId: user?.employeeId || '—',
+        bikeNumber: user?.bikeNumber || '—',
         totalTrips,
         totalKM: Math.round(totalKM * 100) / 100,
         totalEarnings: Math.round(totalEarnings * 100) / 100,
         avgKM: Math.round(avgKM * 100) / 100,
         trips,
-        customers: customerList,
       });
     } catch (e) {
       showAlert('Export Error', 'Could not generate PDF. Please try again.');
@@ -234,25 +225,7 @@ export default function SummaryScreen({ user }) {
             </View>
           )}
 
-          {/* Customer Visit List */}
-          {customerList.length > 0 && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Customers Visited</Text>
-              {customerList.map((c, i) => (
-                <View key={c.name} style={styles.customerRow}>
-                  <View style={styles.customerRank}>
-                    <Text style={styles.customerRankText}>{i + 1}</Text>
-                  </View>
-                  <Text style={styles.customerName}>{c.name}</Text>
-                  <View style={styles.visitBadge}>
-                    <Text style={styles.visitBadgeText}>
-                      {c.count} visit{c.count !== 1 ? 's' : ''}
-                    </Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          )}
+
 
           {/* Trip List Preview */}
           {totalTrips > 0 && (
@@ -265,9 +238,6 @@ export default function SummaryScreen({ user }) {
                   <View key={t.id} style={styles.tripRow}>
                     <View style={styles.tripRowLeft}>
                       <Text style={styles.tripDate}>{formatShortDate(t.date)}</Text>
-                      <Text style={styles.tripCustomers} numberOfLines={1}>
-                        {(t.customers || []).join(', ') || '—'}
-                      </Text>
                     </View>
                     <View style={styles.tripRowRight}>
                       <Text style={styles.tripKM}>{formatKM(t.distanceKM)}</Text>

@@ -51,7 +51,6 @@ import {
   setBgDistance,
   setBgLastCoord,
 } from '../utils/storage';
-import { startBackgroundTracking, stopBackgroundTracking, isBackgroundTrackingActive } from '../utils/backgroundTask';
 import { haversineDistance } from '../utils/haversine';
 
 export default function DashboardScreen({ user, navigation }) {
@@ -68,7 +67,6 @@ export default function DashboardScreen({ user, navigation }) {
   const clockRef = useRef(null);
   const tripTimerRef = useRef(null);
   const distancePollRef = useRef(null);
-  const autoSaveRef = useRef(null);
   const locationWatchRef = useRef(null);
   const lastCoordRef = useRef(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -218,25 +216,10 @@ export default function DashboardScreen({ user, navigation }) {
     }
   }
 
-  // ─── Auto-save trip progress every 30s ────────────────────────────────────
-  function startAutoSave(tripData) {
-    if (autoSaveRef.current) clearInterval(autoSaveRef.current);
-    autoSaveRef.current = setInterval(async () => {
-      const dist = await getBgDistance();
-      const updatedTrip = {
-        ...tripData,
-        distanceKM: dist,
-        earnings: calculateEarnings(dist),
-      };
-      await saveActiveTrip(updatedTrip);
-    }, 30000);
-  }
-
   function clearAllTimers() {
     clearInterval(clockRef.current);
     clearInterval(tripTimerRef.current);
     clearInterval(distancePollRef.current);
-    clearInterval(autoSaveRef.current);
     if (locationWatchRef.current) {
       locationWatchRef.current.remove();
       locationWatchRef.current = null;
@@ -247,7 +230,6 @@ export default function DashboardScreen({ user, navigation }) {
     return () => {
       clearInterval(tripTimerRef.current);
       clearInterval(distancePollRef.current);
-      clearInterval(autoSaveRef.current);
       if (locationWatchRef.current) locationWatchRef.current.remove();
     };
   }, []);
@@ -256,52 +238,35 @@ export default function DashboardScreen({ user, navigation }) {
   async function handleOutTime() {
     if (activeTrip) return;
 
-    // Navigate to NewTripScreen first for customer selection
-    navigation.navigate('NewTrip', {
-      onTripStart: async (selectedCustomers) => {
-        try { if (Haptics) await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); } catch (e) { /* web */ }
-        const outTimeISO = new Date().toISOString();
-        const now = new Date();
+    try { if (Haptics) await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); } catch (e) { /* web */ }
+    const outTimeISO = new Date().toISOString();
+    const now = new Date();
 
-        const newTrip = {
-          id: generateUUID(),
-          date: now.toISOString(),
-          outTime: outTimeISO,
-          inTime: null,
-          durationMinutes: 0,
-          distanceKM: 0,
-          earnings: 0,
-          customers: selectedCustomers,
-          coordinates: [],
-          month: String(now.getMonth() + 1).padStart(2, '0'),
-          year: now.getFullYear(),
-        };
+    const newTrip = {
+      id: generateUUID(),
+      date: now.toISOString(),
+      outTime: outTimeISO,
+      inTime: null,
+      durationMinutes: 0,
+      distanceKM: 0,
+      earnings: 0,
+      coordinates: [],
+      month: String(now.getMonth() + 1).padStart(2, '0'),
+      year: now.getFullYear(),
+    };
 
-        await clearBgDistance();
-        await saveActiveTrip(newTrip);
-        setActiveTrip(newTrip);
-        setLiveDistance(0);
-        setElapsedSeconds(0);
-        lastCoordRef.current = null;
+    await clearBgDistance();
+    await saveActiveTrip(newTrip);
+    setActiveTrip(newTrip);
+    setLiveDistance(0);
+    setElapsedSeconds(0);
+    lastCoordRef.current = null;
 
-        startTripTimer(new Date(outTimeISO).getTime());
-        startDistancePoll();
-        startAutoSave(newTrip);
-        await startLocationWatch();
+    startTripTimer(new Date(outTimeISO).getTime());
+    startDistancePoll();
+    await startLocationWatch();
 
-        // Start background tracking (native only)
-        if (Platform.OS !== 'web') {
-          const result = await startBackgroundTracking();
-          if (!result.success) {
-            showAlert(
-              'GPS Permission Required',
-              'Please allow background location access for accurate tracking.'
-            );
-          }
-        }
-        setGpsStatus('active');
-      },
-    });
+    setGpsStatus('active');
   }
 
   // ─── IN TIME — End Trip ────────────────────────────────────────────────────
@@ -327,11 +292,9 @@ export default function DashboardScreen({ user, navigation }) {
       await saveTrip(completedTrip);
       await clearActiveTrip();
       await clearBgDistance();
-      try { await stopBackgroundTracking(); } catch (e) { /* web */ }
 
       clearInterval(tripTimerRef.current);
       clearInterval(distancePollRef.current);
-      clearInterval(autoSaveRef.current);
       if (locationWatchRef.current) {
         locationWatchRef.current.remove();
         locationWatchRef.current = null;
@@ -453,7 +416,6 @@ export default function DashboardScreen({ user, navigation }) {
             distanceKM={liveDistance}
             earnings={liveEarnings}
             elapsedSeconds={elapsedSeconds}
-            customers={activeTrip.customers}
           />
         )}
 

@@ -13,7 +13,7 @@ if (Platform.OS !== 'web') {
 /**
  * Generate branded HTML for the monthly summary report.
  */
-function buildReportHTML({ month, year, employeeName, employeeId, totalTrips, totalKM, totalEarnings, avgKM, trips, customers }) {
+function buildReportHTML({ month, year, employeeName, employeeId, bikeNumber, totalTrips, totalKM, totalEarnings, avgKM, trips }) {
   const tripRows = trips
     .map(
       (t, i) => `
@@ -22,21 +22,11 @@ function buildReportHTML({ month, year, employeeName, employeeId, totalTrips, to
           <td>${t.dateStr || '—'}</td>
           <td>${t.distanceKM || 0} KM</td>
           <td>₹${t.earnings || 0}</td>
-          <td>${(t.customers || []).join(', ') || '—'}</td>
         </tr>`
     )
     .join('');
 
-  const customerRows = customers
-    .map(
-      (c, i) => `
-        <tr>
-          <td>${i + 1}</td>
-          <td>${c.name}</td>
-          <td>${c.count} visit${c.count !== 1 ? 's' : ''}</td>
-        </tr>`
-    )
-    .join('');
+
 
   return `<!DOCTYPE html>
 <html>
@@ -72,7 +62,7 @@ function buildReportHTML({ month, year, employeeName, employeeId, totalTrips, to
     <p>Monthly Summary Report — ${month} ${year}</p>
     <p>Generated: ${new Date().toLocaleString('en-IN')}</p>
     <div class="employee">
-      👤 ${employeeName || 'Field Executive'} <span>• ID: ${employeeId || '—'}</span>
+      👤 ${employeeName || 'Field Executive'} <span>• ID: ${employeeId || '—'}</span> <span>• BIKE: ${bikeNumber || '—'}</span>
     </div>
   </div>
 
@@ -99,19 +89,12 @@ function buildReportHTML({ month, year, employeeName, employeeId, totalTrips, to
   <h2>Trip Details</h2>
   <table>
     <thead>
-      <tr><th>#</th><th>Date</th><th>Distance</th><th>Earnings</th><th>Customers</th></tr>
+      <tr><th>#</th><th>Date</th><th>Distance</th><th>Earnings</th></tr>
     </thead>
     <tbody>${tripRows}</tbody>
   </table>` : ''}
 
-  ${customers.length > 0 ? `
-  <h2>Customers Visited</h2>
-  <table>
-    <thead>
-      <tr><th>#</th><th>Customer</th><th>Visits</th></tr>
-    </thead>
-    <tbody>${customerRows}</tbody>
-  </table>` : ''}
+
 
   <div class="footer">
     NCH GPS Tracker v1.0.0 — Confidential Report • For Internal Use Only

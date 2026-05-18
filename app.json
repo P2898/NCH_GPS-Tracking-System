@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "NCH GPS Tracker",
-    "slug": "nch-gps-tracker",
+    "slug": "nchgps",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -19,13 +19,7 @@
       "bundleIdentifier": "com.nch.gpstracker",
       "buildNumber": "1",
       "infoPlist": {
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "NCH GPS Tracker needs your location at all times to accurately track your field trips and calculate distance travelled.",
-        "NSLocationWhenInUseUsageDescription": "NCH GPS Tracker needs your location to track your trip distance.",
-        "NSLocationAlwaysUsageDescription": "NCH GPS Tracker needs your location at all times to accurately track your field trips and calculate distance travelled.",
-        "UIBackgroundModes": [
-          "location",
-          "fetch"
-        ]
+        "NSLocationWhenInUseUsageDescription": "NCH GPS Tracker needs your location to track your trip distance."
       }
     },
     "android": {
@@ -38,11 +32,14 @@
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_BACKGROUND_LOCATION",
         "FOREGROUND_SERVICE",
         "FOREGROUND_SERVICE_LOCATION",
         "RECEIVE_BOOT_COMPLETED",
-        "POST_NOTIFICATIONS"
+        "POST_NOTIFICATIONS",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION"
       ]
     },
     "web": {
@@ -52,14 +49,10 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "NCH GPS Tracker needs your location at all times to accurately track your field trips and calculate distance travelled.",
-          "locationAlwaysPermission": "NCH GPS Tracker needs your location at all times to accurately track your field trips and calculate distance travelled.",
           "locationWhenInUsePermission": "NCH GPS Tracker needs your location to track your trip distance.",
-          "isAndroidBackgroundLocationEnabled": true,
           "isAndroidForegroundServiceEnabled": true
         }
       ],
-      "expo-task-manager",
       [
         "expo-notifications",
         {
@@ -71,8 +64,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "nch-gps-tracker"
+        "projectId": "947220eb-9c0f-4e41-9da5-3934da90df0c"
       }
-    }
+    },
+    "owner": "p2898"
   }
 }
