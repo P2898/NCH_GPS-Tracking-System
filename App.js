@@ -28,6 +28,8 @@ import SummaryScreen from './screens/SummaryScreen';
 import ProfileScreen from './screens/ProfileScreen';
 
 import { getUserSession, getActiveTrip } from './utils/storage';
+import { syncPendingTrips } from './services/googleSheetsService';
+import { showToast } from './utils/crossPlatform';
 import { COLORS, FONTS, FONT_SIZES, SPACING } from './constants/theme';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 
@@ -197,6 +199,21 @@ export default function App() {
       }
     }
     restoreSession();
+  }, []);
+
+  // Background sync on launch
+  useEffect(() => {
+    async function runSync() {
+      try {
+        const count = await syncPendingTrips();
+        if (count > 0) {
+          showToast(`${count} trips synced to cloud ✅`);
+        }
+      } catch (e) {
+        console.warn('[App] Sync error:', e);
+      }
+    }
+    runSync();
   }, []);
 
   if (!fontsLoaded || !appReady) {

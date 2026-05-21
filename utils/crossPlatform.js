@@ -107,4 +107,17 @@ export function watchWebGeolocation(callback) {
   );
 }
 
-export default { confirmDialog, showAlert, shareText, getWebGeolocation, watchWebGeolocation };
+export function showToast(message) {
+  if (Platform.OS === 'android') {
+    const { ToastAndroid } = require('react-native');
+    ToastAndroid.show(message, ToastAndroid.SHORT);
+  } else if (Platform.OS === 'web') {
+    // Simple web fallback
+    window.alert(message);
+  } else {
+    // iOS fallback
+    Alert.alert('Status', message);
+  }
+}
+
+export default { confirmDialog, showAlert, shareText, getWebGeolocation, watchWebGeolocation, showToast };

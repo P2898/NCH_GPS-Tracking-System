@@ -62,28 +62,7 @@ export default function ProfileScreen({ user, onLogout }) {
     await saveBgTracking(val);
   }
 
-  function confirmClearData() {
-    confirmDialog(
-      '⚠️ Clear All Trip Data',
-      'This will permanently delete ALL your trip history and cannot be undone. Are you sure?',
-      handleClearData
-    );
-  }
 
-  async function handleClearData() {
-    setClearing(true);
-    try {
-      await deleteAllTrips();
-      await clearActiveTrip();
-      await clearBgDistance();
-
-      showAlert('✅ Done', 'All trip data has been cleared.');
-    } catch (e) {
-      showAlert('Error', 'Could not clear data. Please try again.');
-    } finally {
-      setClearing(false);
-    }
-  }
 
   function confirmLogout() {
     confirmDialog(
@@ -233,26 +212,6 @@ export default function ProfileScreen({ user, onLogout }) {
           </View>
         </View>
 
-        {/* Danger Zone */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionLabel, { color: COLORS.danger }]}>Danger Zone</Text>
-
-          <TouchableOpacity
-            style={styles.dangerBtn}
-            activeOpacity={0.8}
-            onPress={confirmClearData}
-            disabled={clearing}
-          >
-            {clearing ? (
-              <ActivityIndicator color={COLORS.danger} size="small" />
-            ) : (
-              <Ionicons name="trash-outline" size={20} color={COLORS.danger} />
-            )}
-            <Text style={styles.dangerBtnText}>
-              {clearing ? 'Clearing...' : 'Clear All Trip Data'}
-            </Text>
-          </TouchableOpacity>
-        </View>
 
         {/* Logout */}
         <TouchableOpacity style={styles.logoutBtn} activeOpacity={0.85} onPress={confirmLogout}>
@@ -460,22 +419,6 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
 
-  dangerBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-    borderWidth: 1.5,
-    borderColor: COLORS.danger,
-    borderRadius: RADIUS.pill,
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.base,
-    justifyContent: 'center',
-  },
-  dangerBtnText: {
-    fontFamily: FONTS.semiBold,
-    fontSize: FONT_SIZES.base,
-    color: COLORS.danger,
-  },
 
   logoutBtn: {
     flexDirection: 'row',

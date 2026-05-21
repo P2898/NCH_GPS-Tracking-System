@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import NetInfo from '@react-native-community/netinfo';
 import { showAlert, watchWebGeolocation, getWebGeolocation } from '../utils/crossPlatform';
 
 // Conditionally import native-only modules
@@ -63,11 +64,12 @@ export default function DashboardScreen({ user, navigation }) {
   const [currentCoords, setCurrentCoords] = useState(null);
   const [gpsStatus, setGpsStatus] = useState('checking');
   const [isSaving, setIsSaving] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
 
   const clockRef = useRef(null);
   const tripTimerRef = useRef(null);
   const distancePollRef = useRef(null);
-  const locationWatchRef = useRef(null);
+  const locationSubscription = useRef(null);
   const lastCoordRef = useRef(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -126,7 +128,7 @@ export default function DashboardScreen({ user, navigation }) {
       return;
     }
     try {
-      const { status } = await Location.getForegroundPermissionsAsync();
+      const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') { setGpsStatus('off'); return; }
       const enabled = await Location.hasServicesEnabledAsync();
       setGpsStatus(enabled ? 'active' : 'off');
@@ -139,6 +141,15 @@ export default function DashboardScreen({ user, navigation }) {
   useEffect(() => {
     clockRef.current = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(clockRef.current);
+  }, []);
+
+  // ─── Network Status ────────────────────────────────────────────────────────
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      // isConnected can be null on some platforms during init, default to true
+      setIsOffline(state.isConnected === false);
+    });
+    return () => unsubscribe();
   }, []);
 
   // ─── GPS pulse animation ───────────────────────────────────────────────────
@@ -179,35 +190,35 @@ export default function DashboardScreen({ user, navigation }) {
     const onLocationUpdate = (latitude, longitude) => {
       setCurrentCoords({ lat: latitude, lng: longitude });
       setGpsStatus('active');
+      
       if (lastCoordRef.current) {
         const delta = haversineDistance(
           lastCoordRef.current.lat,
           lastCoordRef.current.lng,
           latitude, longitude
         );
-        if (delta > 0.005) {
-          setLiveDistance((prev) => {
-            const next = Math.round((prev + delta) * 100) / 100;
-            setBgDistance(next);
-            return next;
-          });
-        }
+        
+        setLiveDistance((prev) => {
+          const next = Math.max(0, prev + delta);
+          setBgDistance(next);
+          return next;
+        });
       }
+      
       lastCoordRef.current = { lat: latitude, lng: longitude };
       setBgLastCoord({ lat: latitude, lng: longitude, timestamp: Date.now() });
     };
 
     if (Platform.OS === 'web') {
-      // Use browser geolocation API on web
       const watchId = watchWebGeolocation((coords) => {
         onLocationUpdate(coords.latitude, coords.longitude);
       });
-      locationWatchRef.current = { remove: () => navigator.geolocation.clearWatch(watchId) };
+      locationSubscription.current = { remove: () => navigator.geolocation.clearWatch(watchId) };
       return;
     }
 
     try {
-      locationWatchRef.current = await Location.watchPositionAsync(
+      locationSubscription.current = await Location.watchPositionAsync(
         { accuracy: Location.Accuracy.High, distanceInterval: 10, timeInterval: 5000 },
         (loc) => onLocationUpdate(loc.coords.latitude, loc.coords.longitude)
       );
@@ -220,9 +231,9 @@ export default function DashboardScreen({ user, navigation }) {
     clearInterval(clockRef.current);
     clearInterval(tripTimerRef.current);
     clearInterval(distancePollRef.current);
-    if (locationWatchRef.current) {
-      locationWatchRef.current.remove();
-      locationWatchRef.current = null;
+    if (locationSubscription.current) {
+      locationSubscription.current.remove();
+      locationSubscription.current = null;
     }
   }
 
@@ -230,7 +241,7 @@ export default function DashboardScreen({ user, navigation }) {
     return () => {
       clearInterval(tripTimerRef.current);
       clearInterval(distancePollRef.current);
-      if (locationWatchRef.current) locationWatchRef.current.remove();
+      if (locationSubscription.current) locationSubscription.current.remove();
     };
   }, []);
 
@@ -253,6 +264,9 @@ export default function DashboardScreen({ user, navigation }) {
       coordinates: [],
       month: String(now.getMonth() + 1).padStart(2, '0'),
       year: now.getFullYear(),
+      employeeName: user?.name || 'Unknown',
+      employeeId: user?.employeeId || 'Unknown',
+      bikeNumber: user?.bikeNumber || 'N/A',
     };
 
     await clearBgDistance();
@@ -295,9 +309,9 @@ export default function DashboardScreen({ user, navigation }) {
 
       clearInterval(tripTimerRef.current);
       clearInterval(distancePollRef.current);
-      if (locationWatchRef.current) {
-        locationWatchRef.current.remove();
-        locationWatchRef.current = null;
+      if (locationSubscription.current) {
+        locationSubscription.current.remove();
+        locationSubscription.current = null;
       }
 
       setActiveTrip(null);
@@ -344,6 +358,13 @@ export default function DashboardScreen({ user, navigation }) {
           </View>
         </View>
       </View>
+
+      {/* Offline Banner */}
+      {isOffline && (
+        <View style={styles.offlineBanner}>
+          <Text style={styles.offlineText}>You are offline — trips saving locally</Text>
+        </View>
+      )}
 
       <ScrollView
         style={styles.scroll}
@@ -515,6 +536,19 @@ const styles = StyleSheet.create({
   },
   scroll: { flex: 1 },
   scrollContent: { padding: SPACING.base, paddingBottom: SPACING.xxxl },
+
+  offlineBanner: {
+    backgroundColor: '#FF6B35',
+    paddingVertical: 6,
+    paddingHorizontal: SPACING.base,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  offlineText: {
+    color: COLORS.white,
+    fontFamily: FONTS.semiBold,
+    fontSize: FONT_SIZES.xs,
+  },
 
   dateTimeCard: {
     backgroundColor: COLORS.white,

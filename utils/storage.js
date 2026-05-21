@@ -3,6 +3,8 @@
 // Handles all read/write operations for trips, active trip state, user session
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { saveTripToSheets } from '../services/googleSheetsService';
+import { showToast } from './crossPlatform';
 
 // ─── Storage Keys ────────────────────────────────────────────────────────────
 const KEYS = {
@@ -63,6 +65,16 @@ export async function saveTrip(trip) {
       trips.push(trip);
     }
     await AsyncStorage.setItem(KEYS.TRIPS, JSON.stringify(trips));
+    
+    // Background sync
+    saveTripToSheets(trip).then(success => {
+      if (success) {
+        showToast("Trip saved and synced ✅");
+      } else {
+        showToast("Trip saved. Will sync when online 📶");
+      }
+    });
+
     return true;
   } catch (e) {
     console.error('[storage] saveTrip error:', e);

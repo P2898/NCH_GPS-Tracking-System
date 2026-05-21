@@ -2,8 +2,8 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, FONTS, FONT_SIZES, SPACING, RADIUS } from '../constants/theme';
-import { formatKM, formatEarnings, formatDuration } from '../utils/formatters';
+import { COLORS, FONTS, FONT_SIZES, SPACING, RADIUS, SHADOWS } from '../constants/theme';
+import { formatDuration } from '../utils/formatters';
 
 export default function LiveTripBanner({ distanceKM = 0, earnings = 0, elapsedSeconds = 0 }) {
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -39,17 +39,14 @@ export default function LiveTripBanner({ distanceKM = 0, earnings = 0, elapsedSe
         </View>
       </View>
 
-      {/* Stats Row */}
-      <View style={styles.statsRow}>
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{formatKM(distanceKM)}</Text>
-          <Text style={styles.statLabel}>Distance</Text>
-        </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{formatEarnings(earnings)}</Text>
-          <Text style={styles.statLabel}>Earnings</Text>
-        </View>
+      {/* Live Stats Row */}
+      <View style={styles.liveDistanceContainer}>
+        <Text style={styles.liveDistanceText}>
+          {distanceKM.toFixed(2)} KM covered
+        </Text>
+        <Text style={styles.liveEarningsText}>
+          ₹{earnings.toFixed(2)} earned
+        </Text>
       </View>
     </View>
   );
@@ -57,10 +54,13 @@ export default function LiveTripBanner({ distanceKM = 0, earnings = 0, elapsedSe
 
 const styles = StyleSheet.create({
   banner: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.white,
     borderRadius: RADIUS.card,
     padding: SPACING.base,
     marginBottom: SPACING.md,
+    borderWidth: 2,
+    borderColor: '#333788',
+    ...SHADOWS.card,
   },
   headerRow: {
     flexDirection: 'row',
@@ -71,20 +71,20 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: COLORS.white,
+    backgroundColor: '#333788',
     marginRight: SPACING.sm,
   },
   bannerTitle: {
     fontFamily: FONTS.bold,
     fontSize: FONT_SIZES.sm,
-    color: COLORS.white,
+    color: '#333788',
     letterSpacing: 1,
     flex: 1,
   },
   timerBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: '#333788',
     borderRadius: RADIUS.pill,
     paddingHorizontal: SPACING.sm,
     paddingVertical: 3,
@@ -96,44 +96,20 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     letterSpacing: 1,
   },
-  statsRow: {
-    flexDirection: 'row',
+  liveDistanceContainer: {
     alignItems: 'center',
-    justifyContent: 'space-around',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: RADIUS.md,
+    justifyContent: 'center',
     paddingVertical: SPACING.sm,
-    marginBottom: SPACING.sm,
   },
-  statItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  statValue: {
+  liveDistanceText: {
     fontFamily: FONTS.bold,
+    fontSize: 28, // Large text
+    color: '#333788',
+    marginBottom: 4,
+  },
+  liveEarningsText: {
+    fontFamily: FONTS.semiBold,
     fontSize: FONT_SIZES.md,
-    color: COLORS.white,
-  },
-  statLabel: {
-    fontFamily: FONTS.regular,
-    fontSize: FONT_SIZES.xs,
-    color: COLORS.summaryCardSubLabel,
-    marginTop: 1,
-  },
-  statDivider: {
-    width: 1,
-    height: 32,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-  },
-  customersRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  customersText: {
-    fontFamily: FONTS.regular,
-    fontSize: FONT_SIZES.xs,
-    color: COLORS.summaryCardSubLabel,
-    flex: 1,
+    color: COLORS.success,
   },
 });
