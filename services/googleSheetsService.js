@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbxbZoKrcF1rGKSgloLPYymo4YuXrCg7aaTgfDlQXPoUOP5YmvXjJRd6IrFl9yBW0CnqRw/exec";
+const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbxfnGbRxatOYHe1pPW68jHCTq9TZ4rHTrmoHbPMNluDT85IU4juBA2Ho3bQ-nF12jL9mQ/exec";
 // Paste your deployed Apps Script URL above
 // after deploying from Google Sheets
 
@@ -144,5 +144,62 @@ export async function getEmployeeTripsFromSheets(employeeId, month) {
   } catch (error) {
     console.warn('[googleSheetsService] Error fetching trips:', error);
     return [];
+  }
+}
+
+/**
+ * Push live location to Google Sheets for admin dashboard tracking
+ */
+export async function updateLiveLocation(employeeId, data) {
+  if (!SHEETS_ENABLED || !GOOGLE_SHEETS_URL || !employeeId) return false;
+
+  try {
+    await fetch(GOOGLE_SHEETS_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-secret-key': SECRET_KEY,
+      },
+      body: JSON.stringify({
+        action: 'update_location',
+        employeeId: employeeId,
+        employeeName: data.employeeName || 'Unknown',
+        bikeNumber: data.bikeNumber || 'N/A',
+        latitude: data.lat,
+        longitude: data.lng,
+        distanceKM: data.distanceKM || 0,
+        earnings: data.earnings || 0,
+        tripStartTime: data.tripStartTime || '',
+      }),
+    });
+    return true;
+  } catch (error) {
+    console.warn('[googleSheetsService] Live location update failed:', error);
+    return false;
+  }
+}
+
+/**
+ * Remove employee from active tracking when trip ends
+ */
+export async function removeLiveLocation(employeeId) {
+  if (!SHEETS_ENABLED || !GOOGLE_SHEETS_URL || !employeeId) return false;
+
+  try {
+    await fetch(GOOGLE_SHEETS_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-secret-key': SECRET_KEY,
+      },
+      body: JSON.stringify({
+        action: 'remove_location',
+        employeeId: employeeId,
+      }),
+    });
+    return true;
+  } catch (error) {
+    console.warn('[googleSheetsService] Remove location failed:', error);
+    return false;
   }
 }
