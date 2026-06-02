@@ -53,6 +53,7 @@ import {
   setBgLastCoord,
 } from '../utils/storage';
 import { haversineDistance } from '../utils/haversine';
+import { updateLiveLocation, removeLiveLocation } from '../services/googleSheetsService';
 
 export default function DashboardScreen({ user, navigation }) {
   const [now, setNow] = useState(new Date());
@@ -71,6 +72,8 @@ export default function DashboardScreen({ user, navigation }) {
   const distancePollRef = useRef(null);
   const locationSubscription = useRef(null);
   const lastCoordRef = useRef(null);
+  const lastPushTimeRef = useRef(0);
+  const PUSH_INTERVAL = 30000; // Push location every 30 seconds
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   // ─── Load initial data ─────────────────────────────────────────────────────
@@ -201,8 +204,40 @@ export default function DashboardScreen({ user, navigation }) {
         setLiveDistance((prev) => {
           const next = Math.max(0, prev + delta);
           setBgDistance(next);
+          
+          // Push to Google Sheets every 30 seconds (not every GPS tick)
+          const now = Date.now();
+          if (user?.employeeId && (now - lastPushTimeRef.current >= PUSH_INTERVAL)) {
+            lastPushTimeRef.current = now;
+            updateLiveLocation(user.employeeId, {
+              lat: latitude,
+              lng: longitude,
+              employeeName: user?.name || 'Unknown',
+              employeeId: user?.employeeId,
+              bikeNumber: user?.bikeNumber || 'N/A',
+              distanceKM: Math.round(next * 100) / 100,
+              earnings: calculateEarnings(next),
+              tripStartTime: activeTrip?.outTime || '',
+            });
+          }
+          
           return next;
         });
+      } else {
+        // Initial location push (always send immediately)
+        if (user?.employeeId) {
+          lastPushTimeRef.current = Date.now();
+          updateLiveLocation(user.employeeId, {
+            lat: latitude,
+            lng: longitude,
+            employeeName: user?.name || 'Unknown',
+            employeeId: user?.employeeId,
+            bikeNumber: user?.bikeNumber || 'N/A',
+            distanceKM: 0,
+            earnings: 0,
+            tripStartTime: activeTrip?.outTime || '',
+          });
+        }
       }
       
       lastCoordRef.current = { lat: latitude, lng: longitude };
@@ -306,6 +341,10 @@ export default function DashboardScreen({ user, navigation }) {
       await saveTrip(completedTrip);
       await clearActiveTrip();
       await clearBgDistance();
+      
+      if (user?.employeeId) {
+        await removeLiveLocation(user.employeeId);
+      }
 
       clearInterval(tripTimerRef.current);
       clearInterval(distancePollRef.current);
