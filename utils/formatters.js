@@ -1,9 +1,22 @@
 // utils/formatters.js
 // Display formatting utilities for NCH GPS Tracker
 
-const RATE_PER_KM = 4; // ₹4 per KM — change this constant to update rate globally
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export { RATE_PER_KM };
+let RATE_PER_KM = 4; // ₹4 per KM — default
+
+export const loadGlobalRate = async () => {
+  try {
+    const savedRate = await AsyncStorage.getItem('km_rate');
+    if (savedRate) {
+      RATE_PER_KM = parseFloat(savedRate);
+    }
+  } catch(e) {}
+};
+
+export const setGlobalRate = (rate) => {
+  RATE_PER_KM = rate;
+};
 
 /**
  * Formats a KM value to 2 decimal places with unit.

@@ -28,16 +28,17 @@ import {
   getBgTracking,
 } from '../utils/storage';
 
-import { RATE_PER_KM } from '../utils/formatters';
 import { COLORS, FONTS, FONT_SIZES, SPACING, RADIUS, SHADOWS } from '../constants/theme';
 import { useTheme } from '../context/ThemeContext';
 import ThemeToggle from '../components/ThemeToggle';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function ProfileScreen({ user, onLogout }) {
   const { isDark, colors, shadows, toggleTheme } = useTheme();
   const [gpsEnabled, setGpsEnabled] = useState(true);
   const [bgTracking, setBgTrackingState] = useState(true);
   const [clearing, setClearing] = useState(false);
+  const [ratePerKm, setRatePerKm] = useState(4); // Default to 4
 
   useFocusEffect(
     useCallback(() => {
@@ -50,6 +51,15 @@ export default function ProfileScreen({ user, onLogout }) {
     const bg = await getBgTracking();
     setGpsEnabled(gps);
     setBgTrackingState(bg);
+    
+    // Load dynamic rate from storage or formatters default
+    try {
+      const storageRate = await AsyncStorage.getItem('km_rate');
+      if (storageRate) {
+        const parsed = parseFloat(storageRate);
+        if (!isNaN(parsed)) setRatePerKm(parsed);
+      }
+    } catch(e) {}
   }
 
   async function handleGpsToggle(val) {
@@ -175,8 +185,8 @@ export default function ProfileScreen({ user, onLogout }) {
           <View style={styles.rateCard}>
             <View style={styles.rateLeft}>
               <Ionicons name="cash-outline" size={28} color={COLORS.success} />
-              <View>
-                <Text style={styles.rateValue}>₹{RATE_PER_KM}.00 / KM</Text>
+              <View style={styles.rateContent}>
+                <Text style={styles.rateValue}>₹{ratePerKm.toFixed(2)} / KM</Text>
                 <Text style={styles.rateSubtitle}>Current reimbursement rate</Text>
               </View>
             </View>

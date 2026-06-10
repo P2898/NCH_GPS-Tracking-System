@@ -19,7 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { saveUserSession } from '../utils/storage';
 import { COLORS, FONTS, FONT_SIZES, SPACING, RADIUS, SHADOWS } from '../constants/theme';
 
-export default function LoginScreen({ onLogin }) {
+export default function LoginScreen({ onLogin, navigation }) {
   const [name, setName] = useState('');
   const [employeeId, setEmployeeId] = useState('');
   const [bikeNumber, setBikeNumber] = useState('');
@@ -217,6 +217,14 @@ export default function LoginScreen({ onLogin }) {
             <Text style={styles.disclaimer}>
               Your session is stored locally on this device. No internet required.
             </Text>
+
+            <TouchableOpacity 
+              style={styles.adminLoginBtn}
+              onPress={() => navigation.navigate('AdminLogin')}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.adminLoginText}>Admin Login &rarr;</Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -371,9 +379,19 @@ const styles = StyleSheet.create({
   disclaimer: {
     fontFamily: FONTS.regular,
     fontSize: FONT_SIZES.xs,
-    color: COLORS.textSecondary,
+    color: COLORS.textMuted,
     textAlign: 'center',
-    marginTop: SPACING.base,
-    lineHeight: 18,
+    marginTop: SPACING.md,
+    lineHeight: 16,
+  },
+  adminLoginBtn: {
+    marginTop: SPACING.xxl,
+    alignItems: 'center',
+    paddingVertical: SPACING.sm,
+  },
+  adminLoginText: {
+    color: '#5c5f8a',
+    fontFamily: FONTS.semiBold,
+    fontSize: FONT_SIZES.sm,
   },
 });

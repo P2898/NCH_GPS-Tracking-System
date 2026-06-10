@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbxfnGbRxatOYHe1pPW68jHCTq9TZ4rHTrmoHbPMNluDT85IU4juBA2Ho3bQ-nF12jL9mQ/exec";
+const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbyBOn7t0Ct9lgK0len8UeQ0DJHMwEDVTu2hbxIoEw7Y_VKsLtVR0PYD0wZTzmQ-g6hKCg/exec";
 // Paste your deployed Apps Script URL above
 // after deploying from Google Sheets
 
@@ -201,5 +201,115 @@ export async function removeLiveLocation(employeeId) {
   } catch (error) {
     console.warn('[googleSheetsService] Remove location failed:', error);
     return false;
+  }
+}
+
+// ============================================
+// ADMIN DATA FETCHING FUNCTIONS
+// ============================================
+
+function mapTripData(row) {
+  // If the data already comes as camelCase (from legacy function), just return it
+  if (row.employeeId && row.distanceKM !== undefined) return row;
+
+  return {
+    id: row.id || row['ID'] || Math.random().toString(),
+    employeeId: row['Employee ID'],
+    employeeName: row['Employee Name'],
+    bikeNumber: row['Bike Number'],
+    date: row['Date'],
+    outTime: row['OUT Time'],
+    inTime: row['IN Time'],
+    durationMinutes: row['Duration (mins)'],
+    distanceKM: row['Distance (KM)'],
+    earnings: row['Earnings (₹)'],
+    month: row['Month'],
+    year: row['Year'],
+    syncStatus: row['Sync Status'] || row.syncStatus || 'Synced'
+  };
+}
+
+export async function fetchActiveLocations() {
+  if (!SHEETS_ENABLED || !GOOGLE_SHEETS_URL) return [];
+  try {
+    const response = await fetch(`${GOOGLE_SHEETS_URL}?action=active_locations`, {
+      headers: { 'x-secret-key': SECRET_KEY },
+    });
+    const result = await response.json();
+    if (result && Array.isArray(result)) {
+      return result.map(row => ({
+        employeeId: row['Employee ID'] || row.employeeId,
+        employeeName: row['Employee Name'] || row.employeeName,
+        bikeNumber: row['Bike Number'] || row.bikeNumber,
+        latitude: parseFloat(row['Latitude'] || row.latitude || 0),
+        longitude: parseFloat(row['Longitude'] || row.longitude || 0),
+        distanceKM: parseFloat(row['Distance (KM)'] || row.distanceKM || 0),
+        earnings: parseFloat(row['Earnings (₹)'] || row.earnings || 0),
+        tripStartTime: row['Trip Start Time'] || row.tripStartTime || '',
+        lastUpdated: row['Last Updated'] || row.lastUpdated || ''
+      }));
+    }
+    return [];
+  } catch (error) {
+    console.warn('[googleSheetsService] fetchActiveLocations failed:', error);
+    return [];
+  }
+}
+
+
+export async function fetchAllTrips() {
+  if (!SHEETS_ENABLED || !GOOGLE_SHEETS_URL) return [];
+  try {
+    const response = await fetch(`${GOOGLE_SHEETS_URL}?action=all_trips`, {
+      headers: { 'x-secret-key': SECRET_KEY },
+    });
+    const result = await response.json();
+    return result.status === 'success' ? result.data.map(mapTripData) : [];
+  } catch (error) {
+    console.warn('[googleSheetsService] fetchAllTrips failed:', error);
+    throw error;
+  }
+}
+
+export async function fetchTripsByDate(date) {
+  if (!SHEETS_ENABLED || !GOOGLE_SHEETS_URL) return [];
+  try {
+    const response = await fetch(`${GOOGLE_SHEETS_URL}?action=trips_by_date&date=${encodeURIComponent(date)}`, {
+      headers: { 'x-secret-key': SECRET_KEY },
+    });
+    const result = await response.json();
+    return result.status === 'success' ? result.data.map(mapTripData) : [];
+  } catch (error) {
+    console.warn('[googleSheetsService] fetchTripsByDate failed:', error);
+    throw error;
+  }
+}
+
+export async function fetchTripsByMonth(month, year) {
+  if (!SHEETS_ENABLED || !GOOGLE_SHEETS_URL) return [];
+  try {
+    const response = await fetch(`${GOOGLE_SHEETS_URL}?action=trips_by_month&month=${encodeURIComponent(month)}&year=${encodeURIComponent(year)}`, {
+      headers: { 'x-secret-key': SECRET_KEY },
+    });
+    const result = await response.json();
+    return result.status === 'success' ? result.data.map(mapTripData) : [];
+  } catch (error) {
+    console.warn('[googleSheetsService] fetchTripsByMonth failed:', error);
+    throw error;
+  }
+}
+
+export async function fetchEmployeeSummary(employeeId, month, year) {
+  if (!SHEETS_ENABLED || !GOOGLE_SHEETS_URL) return [];
+  try {
+    const url = `${GOOGLE_SHEETS_URL}?action=employee_summary&employeeId=${encodeURIComponent(employeeId)}&month=${encodeURIComponent(month)}&year=${encodeURIComponent(year)}`;
+    const response = await fetch(url, {
+      headers: { 'x-secret-key': SECRET_KEY },
+    });
+    const result = await response.json();
+    return result.status === 'success' ? result.data.map(mapTripData) : [];
+  } catch (error) {
+    console.warn('[googleSheetsService] fetchEmployeeSummary failed:', error);
+    throw error;
   }
 }

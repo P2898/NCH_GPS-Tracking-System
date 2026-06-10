@@ -285,6 +285,18 @@ export default function DashboardScreen({ user, navigation }) {
     if (activeTrip) return;
 
     try { if (Haptics) await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); } catch (e) { /* web */ }
+    
+    // Fetch initial location immediately to show up on Admin panel instantly
+    let initialLat = 0, initialLng = 0;
+    try {
+      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      initialLat = loc.coords.latitude;
+      initialLng = loc.coords.longitude;
+      setCurrentCoords({ lat: initialLat, lng: initialLng });
+    } catch (e) {
+      console.warn('Initial location fetch failed:', e);
+    }
+    
     const outTimeISO = new Date().toISOString();
     const now = new Date();
 
@@ -310,6 +322,21 @@ export default function DashboardScreen({ user, navigation }) {
     setLiveDistance(0);
     setElapsedSeconds(0);
     lastCoordRef.current = null;
+
+    // Push to admin portal instantly
+    if (user?.employeeId && initialLat !== 0) {
+      lastPushTimeRef.current = Date.now();
+      updateLiveLocation(user.employeeId, {
+        lat: initialLat,
+        lng: initialLng,
+        employeeName: user?.name || 'Unknown',
+        employeeId: user?.employeeId,
+        bikeNumber: user?.bikeNumber || 'N/A',
+        distanceKM: 0,
+        earnings: 0,
+        tripStartTime: outTimeISO,
+      });
+    }
 
     startTripTimer(new Date(outTimeISO).getTime());
     startDistancePoll();

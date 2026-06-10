@@ -4,11 +4,11 @@
 
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Platform, Text, TouchableOpacity } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import * as Notifications from 'expo-notifications';
@@ -26,12 +26,21 @@ import DashboardScreen from './screens/DashboardScreen';
 import HistoryScreen from './screens/HistoryScreen';
 import SummaryScreen from './screens/SummaryScreen';
 import ProfileScreen from './screens/ProfileScreen';
+import AdminLoginScreen from './screens/admin/AdminLoginScreen';
+import AdminOverviewScreen from './screens/admin/AdminOverviewScreen';
+import AdminTripsScreen from './screens/admin/AdminTripsScreen';
+import AdminEmployeesScreen from './screens/admin/AdminEmployeesScreen';
+import AdminEmployeeDetailScreen from './screens/admin/AdminEmployeeDetailScreen';
+import AdminSettingsScreen from './screens/admin/AdminSettingsScreen';
 
 import { getUserSession, getActiveTrip } from './utils/storage';
+import { ADMIN_SESSION_KEY, ADMIN_SESSION_DURATION } from './constants/adminCredentials';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { syncPendingTrips } from './services/googleSheetsService';
 import { showToast } from './utils/crossPlatform';
 import { COLORS, FONTS, FONT_SIZES, SPACING } from './constants/theme';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
+import { loadGlobalRate } from './utils/formatters';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -89,6 +98,9 @@ function MainTabs({ user, onLogout, navigation }) {
   }
 
   const { isDark, colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const baseHeight = Platform.OS === 'ios' ? 88 : 70;
+  const basePadding = Platform.OS === 'ios' ? 30 : 12;
 
   return (
     <Tab.Navigator
@@ -97,8 +109,8 @@ function MainTabs({ user, onLogout, navigation }) {
         tabBarStyle: {
           backgroundColor: colors.tabBarBackground,
           borderTopWidth: 0,
-          height: Platform.OS === 'ios' ? 88 : 74,
-          paddingBottom: Platform.OS === 'ios' ? 30 : 16,
+          height: baseHeight + insets.bottom,
+          paddingBottom: basePadding + insets.bottom,
           paddingTop: 8,
           elevation: 12,
           shadowColor: colors.primaryDark,
@@ -148,9 +160,77 @@ function MainTabs({ user, onLogout, navigation }) {
   );
 }
 
+// ─── Admin Tab Navigator ────────────────────────────────────────────────────────
+function AdminTabs({ navigation }) {
+  const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const baseHeight = Platform.OS === 'ios' ? 88 : 70;
+  const basePadding = Platform.OS === 'ios' ? 30 : 12;
+
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: true,
+        headerStyle: {
+          backgroundColor: COLORS.primary,
+          elevation: 0,
+          shadowOpacity: 0,
+        },
+        headerTitleStyle: {
+          color: COLORS.white,
+          fontFamily: FONTS.bold,
+          fontSize: FONT_SIZES.lg,
+        },
+        headerTintColor: COLORS.white,
+        headerRight: () => (
+          <TouchableOpacity 
+            style={{ marginRight: 16 }}
+            onPress={async () => {
+              await AsyncStorage.removeItem(ADMIN_SESSION_KEY);
+              navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+            }}
+          >
+            <Text style={{ color: COLORS.white, fontFamily: FONTS.semiBold, fontSize: 14 }}>Logout</Text>
+          </TouchableOpacity>
+        ),
+        tabBarStyle: {
+          backgroundColor: COLORS.primary,
+          borderTopWidth: 0,
+          height: baseHeight + insets.bottom,
+          paddingBottom: basePadding + insets.bottom,
+          paddingTop: 8,
+          elevation: 12,
+          shadowColor: COLORS.primaryDark,
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.25,
+          shadowRadius: 12,
+        },
+        tabBarActiveTintColor: COLORS.white,
+        tabBarInactiveTintColor: COLORS.tabInactiveIcon,
+        tabBarLabelStyle: styles.tabLabel,
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName;
+          if (route.name === 'AdminOverview') iconName = focused ? 'stats-chart' : 'stats-chart-outline';
+          else if (route.name === 'AdminTrips') iconName = focused ? 'map' : 'map-outline';
+          else if (route.name === 'AdminEmployees') iconName = focused ? 'people' : 'people-outline';
+          else if (route.name === 'AdminSettings') iconName = focused ? 'settings' : 'settings-outline';
+
+          return <Ionicons name={iconName} size={size} color={color} />;
+        },
+      })}
+    >
+      <Tab.Screen name="AdminOverview" component={AdminOverviewScreen} options={{ tabBarLabel: 'Overview', title: 'Overview' }} />
+      <Tab.Screen name="AdminTrips" component={AdminTripsScreen} options={{ tabBarLabel: 'Trips', title: 'All Trips' }} />
+      <Tab.Screen name="AdminEmployees" component={AdminEmployeesScreen} options={{ tabBarLabel: 'Employees', title: 'Field Staff' }} />
+      <Tab.Screen name="AdminSettings" component={AdminSettingsScreen} options={{ tabBarLabel: 'Settings', title: 'Settings' }} />
+    </Tab.Navigator>
+  );
+}
+
 // ─── Root App Component ───────────────────────────────────────────────────────
 export default function App() {
   const [user, setUser] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [appReady, setAppReady] = useState(false);
 
   const [fontsLoaded] = useFonts({
@@ -188,10 +268,24 @@ export default function App() {
   useEffect(() => {
     async function restoreSession() {
       try {
+        // Check admin session first
+        const adminDataRaw = await AsyncStorage.getItem(ADMIN_SESSION_KEY);
+        if (adminDataRaw) {
+          const adminData = JSON.parse(adminDataRaw);
+          if (adminData.isAdmin && Date.now() - adminData.loginTime < ADMIN_SESSION_DURATION) {
+            setIsAdmin(true);
+          } else {
+            // Admin session expired
+            await AsyncStorage.removeItem(ADMIN_SESSION_KEY);
+          }
+        }
+
         const savedUser = await getUserSession();
         if (savedUser) {
           setUser(savedUser);
         }
+        
+        await loadGlobalRate(); // load custom rate from admin
       } catch (e) {
         console.error('[App] Session restore error:', e);
       } finally {
@@ -233,8 +327,23 @@ export default function App() {
       <SafeAreaProvider>
         <StatusBar style="light" />
         <NavigationContainer>
-          {user ? (
-            <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
+            {isAdmin ? (
+              <>
+                <Stack.Screen name="AdminDashboard" component={AdminTabs} />
+                <Stack.Screen 
+                  name="AdminEmployeeDetail" 
+                  component={AdminEmployeeDetailScreen} 
+                  options={{ 
+                    headerShown: true, 
+                    title: 'Employee Details',
+                    headerStyle: { backgroundColor: COLORS.primary },
+                    headerTintColor: COLORS.white,
+                    headerTitleStyle: { fontFamily: FONTS.bold }
+                  }} 
+                />
+              </>
+            ) : user ? (
               <Stack.Screen name="MainTabs">
                 {(props) => (
                   <MainTabs
@@ -244,10 +353,27 @@ export default function App() {
                   />
                 )}
               </Stack.Screen>
-            </Stack.Navigator>
-          ) : (
-            <LoginScreen onLogin={(u) => setUser(u)} />
-          )}
+            ) : (
+              <>
+                <Stack.Screen name="Login">
+                  {(props) => <LoginScreen {...props} onLogin={(u) => setUser(u)} />}
+                </Stack.Screen>
+                <Stack.Screen name="AdminLogin" component={AdminLoginScreen} />
+                <Stack.Screen name="AdminDashboard" component={AdminTabs} />
+                <Stack.Screen 
+                  name="AdminEmployeeDetail" 
+                  component={AdminEmployeeDetailScreen} 
+                  options={{ 
+                    headerShown: true, 
+                    title: 'Employee Details',
+                    headerStyle: { backgroundColor: COLORS.primary },
+                    headerTintColor: COLORS.white,
+                    headerTitleStyle: { fontFamily: FONTS.bold }
+                  }} 
+                />
+              </>
+            )}
+          </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaProvider>
     </ThemeProvider>
